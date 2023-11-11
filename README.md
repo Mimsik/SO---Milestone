@@ -10,16 +10,16 @@ Programul trebuie sa citeasca header-ul fisierului BMP și sa extraga valoarea �
 respectiv a lungimii pentru imaginea data.
 Programul va crea un fișier cu numele statistica.txt în care vor fi scrise
 următoarele informații:
-    nume fisier: poza.bmp
-    inaltime: 1920
-    lungime: 1280
-    dimensiune: <dimensiune in octeti>
-    identificatorul utilizatorului: <user id>
-    timpul ultimei modificari: 28.10.2023
-    contorul de legaturi: <numar legaturi>
-    drepturi de acces user: RWX
-    drepturi de acces grup: R–-
-    drepturi de acces altii: ---
+            nume fisier: poza.bmp
+            inaltime: 1920
+            lungime: 1280 
+            dimensiune: <dimensiune in octeti>
+            identificatorul utilizatorului: <user id>
+            timpul ultimei modificari: 28.10.2023
+            contorul de legaturi: <numar legaturi>
+            drepturi de acces user: RWX
+            drepturi de acces grup: R–-
+            drepturi de acces altii: ---
 Se vor folosi doar apeluri sistem pentru lucrul cu fișierele (open, read, write, close, stat,
 fstat, lstat... etc). Nu se permite folosirea funcțiilor din biblioteca standard stdio pentru
 lucrul cu fisiere (fopen, fread, fwrite, fclose... etc). Se permite folosirea funcției sprintf
@@ -37,16 +37,16 @@ statistica.txt în funcție de tipul intrării curente astfel:
 ca și în cazul anterior, însă fără lungime și înălțime
 - dacă este o legatura simbolica ce indica spre un fișier obișnuit va scrie
 următoarele informații:
-    nume legatura: nume
-    dimensiune legatura: dimensiunea legaturii
-    dimensiune fisier dimensiunea fisierului target
-    drepturi de acces user legatura: RWX
-    drepturi de acces grup legatura: R–-
-    drepturi de acces altii legatura: ---
+              nume legatura: nume
+              dimensiune legatura: dimensiunea legaturii
+              dimensiune fisier dimensiunea fisierului target
+              drepturi de acces user legatura: RWX
+              drepturi de acces grup legatura: R–-
+              drepturi de acces altii legatura: ---
 - dacă este un director se vor scrie următoarele informații:
-    nume director: director
-    identificatorul utilizatorului: <user id>
-    drepturi de acces user: RWX
-    drepturi de acces grup: R–-
-    drepturi de acces altii: ---
+              nume director: director
+              identificatorul utilizatorului: <user id>
+              drepturi de acces user: RWX
+              drepturi de acces grup: R–-
+              drepturi de acces altii: ---
 - pentru orice alte cazuri nu se va scrie nimic în fișierul statistica.txt
