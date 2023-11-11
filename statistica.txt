@@ -1,0 +1,29 @@
+
+nume fisier: image.bmp
+inaltime: -333
+lungime: 500
+dimensiune: 666122
+identificatorul Utilizatorului: 1000
+timpul ultimei modificari: Sat Nov 11 18:31:17 2023
+contorul de legaturi: 1
+drepturi de acces user: RW-R--R--
+drepturi de acces grup: ---RW-R--
+drepturi de acces altii: ------RW-
+
+
+nume director: dir/dir
+identificatorul utilizatorului: 1000
+drepturi de acces user: RWXR-XR-X
+drepturi de acces grup: R--
+drepturi de acces altii: ---
+
+
+nume fisier: dir/fisier1.txt
+dimensiune: 5
+identificatorul utilizatorului: 1000
+timpul ultimei modificari: Sat Nov 11 20:55:12 2023
+contorul de legaturi: 1
+drepturi de acces user: RW-R--R--
+drepturi de acces grup: ---RW-R--
+drepturi de acces altii: ------RW-
+
