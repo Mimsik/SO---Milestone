@@ -9,29 +9,18 @@
 #include <dirent.h>
 #include <pwd.h>
 
-// Structura pentru header-ul BMP
 #pragma pack(1)
-typedef struct
+typedef struct BMP_Header
 {
     char signature[2];
-    int32_t file_size;
-    int32_t reserved;
-    int32_t data_offset;
-    int32_t header_size;
-    int32_t width;
-    int32_t height;
-    int16_t planes;
-    int16_t bit_count;
-    int32_t compression;
-    int32_t img_size;
-    int32_t x_pixels;
-    int32_t y_pixels;
-    int32_t colors_used;
-    int32_t colors_important;
-} BMPheader;
+    int32_t file_size, reserved, data_offset, header_size, width, height;
+    int16_t planes, bit_number;
+    int32_t compression, img_size, x_pixel_arrays, y_pixel_arrays, colors_used, colors_important;
+
+} BMP_Header;
 #pragma pack()
 
-// Functie pentru obtinerea permisiunilor sub forma de string
+
 void get_permissions(char *str, mode_t mode)
 {
     str[0] = (mode & S_IRUSR) ? 'R' : '-';
@@ -43,200 +32,216 @@ void get_permissions(char *str, mode_t mode)
     str[6] = (mode & S_IROTH) ? 'R' : '-';
     str[7] = (mode & S_IWOTH) ? 'W' : '-';
     str[8] = (mode & S_IXOTH) ? 'X' : '-';
-    str[9] = '\0';
 }
 
-// Functie pentru procesarea unui fisier BMP
-void processBMP(const char *fileName, int output_file)
+
+void processBMPImage(const char *file_name, int output_file)
 {
-    char outputBuffer[1024];  // Declaram variabila outputBuffer
-    int input_file = open(fileName, O_RDONLY);
+    int input_file = open(file_name, O_RDONLY);
     if (input_file == -1)
     {
         perror("The given BMP file cannot be opened");
-        return;
+        exit(-1);
     }
 
-    BMPheader bmpHeader;
-    if (read(input_file, &bmpHeader, sizeof(BMPheader)) != sizeof(BMPheader))
+    BMP_Header bmp_header;
+    if (read(input_file, &bmp_header, sizeof(BMP_Header)) != sizeof(BMP_Header))
     {
         perror("Error reading BMP header");
         close(input_file);
-        return;
+        exit(-1);
     }
 
-    int width = bmpHeader.width;
-    int height = bmpHeader.height;
+    int width = bmp_header.width; //determina latime imaginii
+    int height = bmp_header.height; //determina inaltimea imaginii
 
-    char *baseFileName = strrchr(fileName, '/');
-    char fileNameBuffer[256];
-    if (baseFileName == NULL)
+    char *first_name = strrchr(file_name, '/'); //sparge calea primita prin file_name si separa numele fisierului gasit in director
+    if (first_name == NULL)
     {
-        baseFileName = (char *)fileName;
+        first_name = (char *)file_name;
     }
     else
     {
-        baseFileName++;
+        first_name++;
     }
-    snprintf(fileNameBuffer, sizeof(fileNameBuffer), "%s", baseFileName);
 
-    struct stat fileInfo;
-    if (stat(fileName, &fileInfo) == -1)
+    char buffer_file[256];
+    snprintf(buffer_file, sizeof(buffer_file), "%s", first_name); //salveaza in buffer_file numele fisierului gasit in director
+
+
+    struct stat file_data;
+    if (stat(file_name, &file_data) == -1)
     {
-        perror("Error getting file info");
+        perror("Error getting file data");
         close(input_file);
-        return;
+        exit(-1);
     }
-
-    char modificationTime[20];
-    strcpy(modificationTime, ctime(&fileInfo.st_mtime));
 
     char permission1[10], permission2[10], permission3[10];
-    get_permissions(permission1, fileInfo.st_mode);
-    get_permissions(permission2, fileInfo.st_mode >> 3);
-    get_permissions(permission3, fileInfo.st_mode >> 6);
+    get_permissions(permission1, file_data.st_mode);
+    get_permissions(permission2, file_data.st_mode >> 3);
+    get_permissions(permission3, file_data.st_mode >> 6);
 
-    int numChars = sprintf(outputBuffer, "\nnume fisier: %s\ninaltime: %d\nlungime: %d\ndimensiune: %lu\nidentificatorul Utilizatorului: %d\ntimpul ultimei modificari: %scontorul de legaturi: %lu\ndrepturi de acces user: %s\ndrepturi de acces grup: %s\ndrepturi de acces altii: %s\n\n",
-                           fileNameBuffer, height, width, (unsigned long)fileInfo.st_size, fileInfo.st_uid, modificationTime, (unsigned long)fileInfo.st_nlink, permission1, permission2, permission3);
+    char buffer[1024];
+    char changes_time[20];
+    strcpy(changes_time, ctime(&file_data.st_mtime)); //determina timpul la care a fost facuta ultima modificare
+  
+    int number = sprintf(buffer, "\nnume fisier: %s\ninaltime: %d\nlungime: %d\ndimensiune: %lu\nidentificatorul utilizatorului: %d\ntimpul ultimei modificari: %scontorul de legaturi: %lu\ndrepturi de acces user: %s\ndrepturi de acces grup: %s\ndrepturi de acces altii: %s\n\n",
+                           buffer_file, height, width, (unsigned long)file_data.st_size, file_data.st_uid, changes_time, (unsigned long)file_data.st_nlink, permission1, permission2, permission3);
 
-    if (write(output_file, outputBuffer, numChars) == -1)
-    {
-        perror("Error writing to the output file");
-    }
+    if (write(output_file, buffer, number) == -1) //verifica daca scrie in fisierul de output 
+      perror("Error writing to the output file");
 
     close(input_file);
 }
 
-// Functie pentru procesarea altor tipuri de fisiere
-void processOtherFile(const char *fileName, int outputFd)
+
+void processOtherFile(const char *file_name, int output_file)
 {
-    struct stat fileInfo;
-    if (stat(fileName, &fileInfo) == -1)
+    struct stat file_data;
+    if (stat(file_name, &file_data) == -1)
     {
-        perror("Error getting file info");
-        return;
+        perror("Error getting file data");
+        exit(-1);
     }
 
-    char buffer[1024];
-    int numChars;
+    char *first_name = strrchr(file_name, '/'); //sparge calea primita prin file_name si separa numele fisierului gasit in director
+    if (first_name == NULL)
+    {
+        first_name = (char *)file_name; 
+    }
+    else
+    {
+        first_name++;
+    }
+
+    char buffer_file[256];
+    snprintf(buffer_file, sizeof(buffer_file), "%s", first_name); //salveaza in buffer_file numele fisierului gasit in director
 
     char permission1[10], permission2[10], permission3[10];
-    get_permissions(permission1, fileInfo.st_mode);
-    get_permissions(permission2, fileInfo.st_mode >> 3);
-    get_permissions(permission3, fileInfo.st_mode >> 6);
+    get_permissions(permission1, file_data.st_mode);
+    get_permissions(permission2, file_data.st_mode >> 3);
+    get_permissions(permission3, file_data.st_mode >> 6);
+
+    char buffer[1024];
+    char changes_time[20];
+    strcpy(changes_time, ctime(&file_data.st_mtime)); //determina timpul la care a fost facuta ultima modificare
+
+    int number = sprintf(buffer, "\nnume fisier: %s\ndimensiune: %lu\nidentificatorul utilizatorului: %d\ntimpul ultimei modificari: %scontorul de legaturi: %lu\ndrepturi de acces user: %s\ndrepturi de acces grup: %s\ndrepturi de acces altii: %s\n\n", buffer_file, (unsigned long)file_data.st_size, file_data.st_uid, changes_time, (unsigned long)file_data.st_nlink,permission1, permission2, permission3);
+
+    if (write(output_file, buffer, number) == -1) //verifica daca scrie in fisierul de output
+        {
+            perror("Error writing to the output file");
+            exit(-1);
+        }
+}
+
+void processDirectory(const char *directory, int output_file)
+{
+    struct stat dir_data;
+    if (stat(directory, &dir_data) == -1)
+    {
+        perror("Error getting directory data");
+        exit(-1);
+    }
+
+    char buffer[1024];
+    char permission[10];
+    get_permissions(permission, dir_data.st_mode);
     
-    numChars = sprintf(buffer, "\nnume fisier: %s\ndimensiune: %lu\nidentificatorul utilizatorului: %d\ntimpul ultimei modificari: %scontorul de legaturi: %lu\ndrepturi de acces user: %s\ndrepturi de acces grup: %s\ndrepturi de acces altii: %s\n\n",
-                       fileName, (unsigned long)fileInfo.st_size, fileInfo.st_uid, ctime(&fileInfo.st_mtime), (unsigned long)fileInfo.st_nlink, permission1, permission2, permission3);
+    int number;
+    number = sprintf(buffer, "\nnume director: %s\nidentificatorul utilizatorului: %d\ndrepturi de acces user: %s\ndrepturi de acces grup: R--\ndrepturi de acces altii: ---\n\n",
+                       directory, dir_data.st_uid, permission);
 
-    write(outputFd, buffer, numChars);
+     if (write(output_file, buffer, number) == -1) //verifica daca scrie in fisierul de output
+        {
+            perror("Error writing to the output file");
+            exit(-1);
+        }
 }
 
-// Functie pentru procesarea directorului
-void processDirectory(const char *dirName, int outputFd)
+void processSymbolicLink(const char *link, int output_file)
 {
-    struct stat dirInfo;
-    if (stat(dirName, &dirInfo) == -1)
+    struct stat link_data;
+    if (stat(link, &link_data) == -1)
     {
-        perror("Error getting directory info");
-        return;
+        perror("Error getting symbolic link data");
+        exit(-1);
     }
 
-    char buffer[1024];
-    int numChars;
+    struct stat target_data;
+    if (stat(link, &target_data) == -1)
+    {
+        perror("Error getting target file data");
+        exit(-1);
+    }
+
+    char path[1024];
+    ssize_t size = readlink(link, path, sizeof(path) - 1);
+    path[size] = '\0';
 
     char permission[10];
-    get_permissions(permission, dirInfo.st_mode);
-
-    numChars = sprintf(buffer, "\nnume director: %s\nidentificatorul utilizatorului: %d\ndrepturi de acces user: %s\ndrepturi de acces grup: R--\ndrepturi de acces altii: ---\n\n",
-                       dirName, dirInfo.st_uid, permission);
-
-    write(outputFd, buffer, numChars);
-}
-
-// Functie pentru procesarea legaturii simbolice
-void processSymbolicLink(const char *linkName, int outputFd)
-{
-    struct stat linkInfo;
-    if (stat(linkName, &linkInfo) == -1)
-    {
-        perror("Error getting symbolic link info");
-        return;
-    }
-
-    struct stat targetInfo;
-    if (stat(linkName, &targetInfo) == -1)
-    {
-        perror("Error getting target file info");
-        return;
-    }
+    get_permissions(permission, link_data.st_mode);
 
     char buffer[1024];
-    int numChars;
+    int number = sprintf(buffer, "\nnume legatura: %s\ndimensiune legatura: %ld\ndimensiune fisier target: %ld\ndrepturi de acces user legatura: %s\ndrepturi de acces grup legatura: R--\ndrepturi de acces altii legatura: ---\n\n",
+                       link, (long)link_data.st_size, (long)size, permission);
 
-    // Informații speciale pentru legătură simbolică
-    char target_path[1024];
-    ssize_t target_size = readlink(linkName, target_path, sizeof(target_path) - 1);
-    target_path[target_size] = '\0';
-
-    char permission[10];
-    get_permissions(permission, linkInfo.st_mode);
-
-    numChars = sprintf(buffer, "\nnume legatura: %s\ndimensiune legatura: %ld\ndimensiune fisier target: %ld\ndrepturi de acces user legatura: %s\ndrepturi de acces grup legatura: R--\ndrepturi de acces altii legatura: ---\n\n",
-                       linkName, (long)linkInfo.st_size, (long)target_size, permission);
-
-    write(outputFd, buffer, numChars);
+    if (write(output_file, buffer, number) == -1) //verifica daca scrie in fisierul de output
+        {
+            perror("Error writing to the output file");
+            exit(-1);
+        }
 }
 
-// Functie pentru procesarea unui fisier
-void process_file(char *file_path, int output_fd)
+void processFile(char *file, int output_file)
 {
-    struct stat file_info;
-    if (stat(file_path, &file_info) == -1)
+    struct stat file_data;
+    if (stat(file, &file_data) == -1)
     {
-        perror("Error getting file info");
-        return;
+        perror("Error getting file data");
+        exit(-1);
     }
 
     char *file_type;
-    if (S_ISREG(file_info.st_mode))
+    if (S_ISREG(file_data.st_mode))
     {
-        if (strstr(file_path, ".bmp"))
+        if (strstr(file, ".bmp"))
         {
             file_type = "fișier BMP";
-            processBMP(file_path, output_fd);
+            processBMPImage(file, output_file);
         }
         else
         {
             file_type = "fișier obișnuit";
-            processOtherFile(file_path, output_fd);
+            processOtherFile(file, output_file);
         }
     }
-    else if (S_ISLNK(file_info.st_mode))
+    else if (S_ISLNK(file_data.st_mode))
     {
         file_type = "legătură simbolică";
-        processSymbolicLink(file_path, output_fd);
+        processSymbolicLink(file, output_file);
     }
-    else if (S_ISDIR(file_info.st_mode))
+    else if (S_ISDIR(file_data.st_mode))
     {
         file_type = "director";
-        processDirectory(file_path, output_fd);
+        processDirectory(file, output_file);
     }
     else
     {
-        return; // Ignorăm alte tipuri de fișiere
+        return; //pentru alte tipuri de fisiere 
     }
 
-    printf("%s: %s\n", file_path, file_type);
+    printf("%s: %s\n", file, file_type);
 }
 
-// Functie pentru procesarea unui director
-void process_directory(char *dir_path, int output_fd)
+void processDirectoryExtra(char *directory, int output_file)
 {
-    DIR *dir = opendir(dir_path);
+    DIR *dir = opendir(directory);
     if (dir == NULL)
     {
         perror("Error opening directory");
-        return;
+        exit(-1);
     }
 
     struct dirent *entry;
@@ -244,10 +249,10 @@ void process_directory(char *dir_path, int output_fd)
     {
         if (strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0)
         {
-            char file_path[1024];
-            snprintf(file_path, sizeof(file_path), "%s/%s", dir_path, entry->d_name);
+            char file[1024];
+            snprintf(file, sizeof(file), "%s/%s", directory, entry->d_name);
 
-            process_file(file_path, output_fd);
+            processFile(file, output_file);
         }
     }
 
@@ -258,7 +263,7 @@ int main(int argc, char *argv[])
 {
     if (argc != 2)
     {
-        printf("Usage: %s <director_intrare>\n", argv[0]);
+        printf("Insufficient arguments");
         exit(-1);
     }
 
@@ -269,8 +274,7 @@ int main(int argc, char *argv[])
         exit(-1);
     }
 
-    process_directory(argv[1], output_file);
-
+    processDirectoryExtra(argv[1], output_file);
     close(output_file);
 
     return 0;
