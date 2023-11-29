@@ -1,0 +1,12 @@
+
+file name: image
+height: 360
+width: 480
+size: 518456
+user ID: 1000
+modification time: Thu Nov 30 00:17:30
+link number: 1
+user permissions: RW-R--R--
+group permissions: ---RW-R--
+others permissions: ------RW-t---RW-R--
+

@@ -1,0 +1,10 @@
+
+file name: fisier
+size: 5
+user ID: 1000
+modification time: Thu Nov 30 00:16:56
+link number: 1
+user permissions: RW-R--R--
+group permissions: ---RW-R--RW-R--R--
+others permissions: ------RW----RW-R--RW-R--R--
+
