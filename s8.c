@@ -53,7 +53,7 @@ void convertToGrayscale(const char *file_name)
         exit(-1);
     }
 
-    lseek(input_file, bmp_header.data_offset, SEEK_SET);
+    lseek(input_file, bmp_header.data_offset, SEEK_SET); //muta cursorul la dreapta
 
     int width = bmp_header.width;
     int height = bmp_header.height;
@@ -73,7 +73,7 @@ void convertToGrayscale(const char *file_name)
             unsigned char gray_processing = (unsigned char)(0.299 * pixel_array[0] + 0.587 * pixel_array[1] + 0.114 * pixel_array[2]);
 
             pixel_array[0] = pixel_array[1] = pixel_array[2] = gray_processing;
-            lseek(input_file, -sizeof(pixel_array), SEEK_CUR);
+            lseek(input_file, -sizeof(pixel_array), SEEK_CUR); //muta cursorul inapoi, la stanga
 
             if (write(input_file, &pixel_array, sizeof(pixel_array)) != sizeof(pixel_array))
             {
@@ -127,13 +127,13 @@ void processBMPImage(const char *file_name, int output_file)
     }
 
     char changes_time[20];
-    strncpy(changes_time, ctime(&file_data.st_mtime), sizeof(changes_time) - 1);
+    strncpy(changes_time, ctime(&file_data.st_mtime), sizeof(changes_time) - 1);  //determina timpul ultimei schimbari facute
     changes_time[sizeof(changes_time) - 1] = '\0';
 
     char permission1[10], permission2[10], permission3[10];
-    getPermission(permission1, file_data.st_mode);
-    getPermission(permission2, file_data.st_mode >> 3);
-    getPermission(permission3, file_data.st_mode >> 6);
+    getPermission(permission1, file_data.st_mode); 
+    getPermission(permission2, file_data.st_mode >> 3);  //shifteaza cu 3 pozitii pentru a accesa urmatorii biti
+    getPermission(permission3, file_data.st_mode >> 6);  //shifteaza cu 6 pozitii pentru a accesa urmatorii biti
 
     pid_t grayscale = fork();
     if (grayscale == -1)
@@ -152,6 +152,7 @@ void processBMPImage(const char *file_name, int output_file)
         int state;
         waitpid(grayscale, &state, 0);
 
+	//folosim un buffer pentru a stoca in el datele pe care trebuie sa le scriem in fisierul de statistica aferent imaginii bmp
         int number = sprintf(buffer, "\nfile name: %s\nheight: %d\nwidth: %d\nsize: %lu\nuser ID: %d\nmodification time: %s\nlink number: %lu\nuser permissions: %s\ngroup permissions: %s\nothers permissions: %s\n\n", single_name, height, width, (unsigned long)file_data.st_size, file_data.st_uid, changes_time, (unsigned long)file_data.st_nlink, permission1, permission2, permission3);
 
         if (write(output_file, buffer, number) == -1) //verifica daca scrie in fisierul de output
@@ -186,14 +187,15 @@ void processOtherFile(const char *file_name, int output_file)
 
     char buffer[1024];
     char changes_time[20];
-    strncpy(changes_time, ctime(&file_data.st_mtime), sizeof(changes_time) - 1);
+    strncpy(changes_time, ctime(&file_data.st_mtime), sizeof(changes_time) - 1);  //determina timpul ultimei schimbari facute
     changes_time[sizeof(changes_time) - 1] = '\0';
 
     char permission1[10], permission2[10], permission3[10];
     getPermission(permission1, file_data.st_mode);
-    getPermission(permission2, file_data.st_mode >> 3);
-    getPermission(permission3, file_data.st_mode >> 6);
+    getPermission(permission2, file_data.st_mode >> 3);  //shifteaza cu 3 pozitii pentru a accesa urmatorii biti
+    getPermission(permission3, file_data.st_mode >> 6);  //shifteaza cu 6 pozitii pentru a accesa urmatorii biti
 
+    //folosim un buffer pentru a stoca in el datele pe care trebuie sa le scriem in fisierul de statistica aferent fisierului curent
     int number = sprintf(buffer, "\nfile name: %s\nsize: %lu\nuser ID: %d\nmodification time: %s\nlink number: %lu\nuser permissions: %s\ngroup permissions: %s\nothers permissions: %s\n\n", single_name, (unsigned long)file_data.st_size, file_data.st_uid, changes_time, (unsigned long)file_data.st_nlink, permission1, permission2, permission3);
 
     if (write(output_file, buffer, number) == -1) //verifica daca scrie in fisierul de output
@@ -215,7 +217,8 @@ void processDirectory(const char *directory, int output_file)
     char buffer[1024];
     char permission[10];
     getPermission(permission, dir_data.st_mode);
-
+	
+    //folosim un buffer pentru a stoca in el datele pe care trebuie sa le scriem in fisierul de statistica aferent folderului
     int number = sprintf(buffer, "\ndirectory name: %s\nuser ID: %d\nuser permissions: %s\ngroup permissions: R--\nothers permissions: ---\n\n",
                          directory, dir_data.st_uid, permission);
 
@@ -250,6 +253,7 @@ void processSymbolicLink(const char *link, int output_file)
     getPermission(permission, link_data.st_mode);
 
     char buffer[1024];
+	//folosim un buffer pentru a stoca in el datele pe care trebuie sa le scriem in fisierul de statistica aferent pentru symbolic link
     int number = sprintf(buffer, "\nlink name: %s\nlink size: %ld\ntarget file size: %ld\nuser permissions: %s\ngroup permissions: R--\nothers permissions: ---\n\n",
                      link, (long)link_data.st_size, (long)size, permission);
 
